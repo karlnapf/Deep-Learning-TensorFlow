@@ -43,7 +43,7 @@ def init_tf_ops(sess):
                 run_id = r
     run_id += 1
     run_dir = os.path.join(Config().logs_dir, 'run' + str(run_id))
-    print('Tensorboard logs dir for this run is %s' % (run_dir))
+    #print('Tensorboard logs dir for this run is %s' % (run_dir))
 
     summary_writer = tf.summary.FileWriter(run_dir, sess.graph)
 
