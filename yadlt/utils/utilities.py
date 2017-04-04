@@ -39,6 +39,11 @@ def corrupt_input(data, sess, corrtype, corrfrac):
 
         elif corrtype == 'salt_and_pepper':
             return salt_and_pepper_noise(data, corruption_ratio)
+
+        elif corrtype == 'gaussian':
+            # treat corrfrac as standard deviation
+            return gaussian_white_noise(data, corrfrac)
+
     else:
         return np.copy(data)
 
@@ -169,6 +174,17 @@ def masking_noise(data, sess, v):
 
     return data_noise
 
+def gaussian_white_noise(X, sigma):
+    """Apply Gaussian white noise with given std. deviation to data
+    
+    :param X: array_like, Input data
+    :param v: int, standard deviation of Gaussian noise
+    :return transformed data
+    """
+    N = X.shape[0]
+    D = X.shape[1]
+    X += np.random.randn(N, D)
+    return X
 
 def salt_and_pepper_noise(X, v):
     """Apply salt and pepper noise to data in X.
