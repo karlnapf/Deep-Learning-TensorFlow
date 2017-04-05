@@ -24,7 +24,7 @@ class Trainer(object):
                 default 1e-08)
                 * momentum: learning_rate (float), use_nesterov (bool)
         """
-        assert optimizer in ["sgd", "adagrad", "adam", "momentum"]
+        assert optimizer in ["sgd", "adagrad", "adam", "momentum", "bfgs"]
 
         def d(k, other=None):
             if other is not None:
@@ -49,6 +49,10 @@ class Trainer(object):
             self.opt_ = tf.train.MomentumOptimizer(
                 d("learning_rate"), d("momentum"),
                 use_nesterov=d("use_nesterov", False))
+        
+        elif optimizer == "bfgs":
+            # such a big hackery to use these batch / session based scipy optimizers
+            self.opt_ = "bfgs", d("max_iterations")
 
     def compile(self, cost, name_scope="train"):
         """Compile the optimizer with the given training parameters.
@@ -60,6 +64,9 @@ class Trainer(object):
         name_scope : str , optional (default="train")
             Optional name scope for the optimizer graph ops.
         """
+        if type(self.opt_) is type(()):
+            # such a big hackery to use these batch / session based scipy optimizers
+            return tf.contrib.opt.ScipyOptimizerInterface(cost, options={'maxiter': self.opt_[1]})
         with tf.name_scope(name_scope):
             return self.opt_.minimize(cost)
 

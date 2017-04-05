@@ -87,7 +87,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
 
         self.loss = Loss(self.loss_func)
         self.trainer = Trainer(
-            opt, learning_rate=learning_rate, momentum=momentum)
+            opt, learning_rate=learning_rate, momentum=momentum, max_iterations=num_epochs)
 
         self.n_components = n_components
         self.enc_act_func = enc_act_func
@@ -125,16 +125,35 @@ class DenoisingAutoencoder(UnsupervisedModel):
 
         self : trained model instance
         """
-        pbar = tqdm(range(self.num_epochs))
-        for i in pbar:
-            self._run_train_step(train_X)
+        
+        if self.opt == "bfgs":
+            # batch based optimization using hackery
+            x_corrupted = utilities.corrupt_input(
+                    train_X, self.tf_session, self.corr_type, self.corr_frac)
+            
+            tr_feed = {self.input_data_orig: train_X,
+                       self.input_data: x_corrupted}
+            self.train_step.minimize(self.tf_session, feed_dict=tr_feed)
+            
             if val_X is not None:
                 feed = {self.input_data_orig: val_X,
                         self.input_data: val_X}
                 err = tf_utils.run_summaries(
-                    self.tf_session, self.tf_merged_summaries,
-                    self.tf_summary_writer, i, feed, self.cost)
-                pbar.set_description("Reconstruction loss: %s" % (err))
+                        self.tf_session, self.tf_merged_summaries,
+                        self.tf_summary_writer, i, feed, self.cost)
+                print("Reconstruction loss: %s" % (err))
+            
+        else:
+            pbar = tqdm(range(self.num_epochs))
+            for i in pbar:
+                self._run_train_step(train_X)
+                if val_X is not None:
+                    feed = {self.input_data_orig: val_X,
+                            self.input_data: val_X}
+                    err = tf_utils.run_summaries(
+                        self.tf_session, self.tf_merged_summaries,
+                        self.tf_summary_writer, i, feed, self.cost)
+                    pbar.set_description("Reconstruction loss: %s" % (err))
         return self
 
     def _run_train_step(self, train_X):
@@ -157,7 +176,7 @@ class DenoisingAutoencoder(UnsupervisedModel):
         """
         x_corrupted = utilities.corrupt_input(
             train_X, self.tf_session, self.corr_type, self.corr_frac)
-
+        
         shuff = list(zip(train_X, x_corrupted))
         np.random.shuffle(shuff)
 
