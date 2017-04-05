@@ -266,6 +266,9 @@ def str2actfunc(act_func):
     elif act_func == 'relu':
         return tf.nn.relu
 
+    elif act_func == 'identity':
+        return tf.identity
+
 
 def random_seed_np_tf(seed):
     """Seed numpy and tensorflow random number generators.
